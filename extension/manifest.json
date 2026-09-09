@@ -9,7 +9,10 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["scripts/content.js"]
+      "js": [
+        "scripts/dom-extraction.js",
+        "scripts/content.js"
+      ]
     }
   ]
 }
