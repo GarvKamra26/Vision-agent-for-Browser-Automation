@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operations Dashboard — Live Order Queue</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --card: #1a2332;
+      --border: #1f2937;
+      --accent: #10b981;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --dim: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* Header */
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-left h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: live-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 20px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value.pending { color: var(--amber); }
+    .stat-value.approved { color: var(--accent); }
+    .stat-value.total { color: var(--blue); }
+
+    /* Queue Controls */
+    .queue-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .queue-controls button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .queue-controls button:hover {
+      background: var(--card);
+      border-color: var(--accent);
+    }
+
+    .queue-controls button.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent);
+      color: #34d399;
+    }
+
+    .speed-label {
+      font-size: 0.72rem;
+      color: var(--dim);
+    }
+
+    /* Order Table */
+    .orders-table-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--dim);
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+    tbody tr.new-row {
+      animation: row-appear 0.4s ease-out;
+    }
+
+    @keyframes row-appear {
+      from { background: rgba(16, 185, 129, 0.15); opacity: 0; transform: translateX(-10px); }
+      to { background: transparent; opacity: 1; transform: translateX(0); }
+    }
+
+    tbody tr.approved-row {
+      animation: row-approved 0.6s ease-out;
+    }
+
+    @keyframes row-approved {
+      0% { background: rgba(16, 185, 129, 0.25); }
+      100% { background: transparent; }
+    }
+
+    td {
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      vertical-align: middle;
+    }
+
+    .order-id {
+      font-weight: 700;
+      color: var(--blue);
+      font-family: monospace;
+    }
+
+    .customer-name { font-weight: 600; }
+
+    .order-amount {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Status Badges */
+    .status-badge-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .status-pending {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .status-approved {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    /* Approve Button */
+    button.approve-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.approve-btn:hover {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    button.approve-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+      background: transparent;
+      color: var(--dim);
+      box-shadow: none;
+      border-color: var(--border);
+    }
+
+    .approved-label {
+      color: #34d399;
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10000;
+    }
+
+    .toast {
+      background: var(--card);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      animation: toast-in 0.3s ease-out, toast-out 0.3s 2.5s ease-in forwards;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.visible { display: flex; }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; }
+      to { opacity: 0; transform: translateY(-5px); }
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--dim);
+    }
+
+    .empty-state svg {
+      margin-bottom: 12px;
+    }
+
+    /* Event Log */
+    .event-log-section {
+      margin-top: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .event-log-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--dim);
+      margin-bottom: 8px;
+    }
+
+    .event-log {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-height: 120px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .event-log .ev-time { color: var(--dim); }
+    .event-log .ev-type { color: #38bdf8; font-weight: 600; }
+    .event-log .ev-data { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1>Operations Dashboard</h1>
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        LIVE QUEUE
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat">
+        <div class="stat-value pending" id="pendingCount">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value approved" id="approvedCount">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value total" id="totalCount">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="queue-controls">
+    <button id="toggleQueueBtn" class="active">⏸ Pause Queue</button>
+    <button id="addOrderBtn">➕ Add Order Now</button>
+    <button id="clearBtn">🗑 Clear All</button>
+    <span class="speed-label">New orders arrive every <strong>6–12 seconds</strong></span>
+  </div>
+
+  <div class="orders-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Item</th>
+          <th>Amount</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody">
+        <!-- Dynamic rows appear here -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="event-log-section">
+    <div class="event-log-title">DOM Event Monitor</div>
+    <div class="event-log" id="eventLog">
+      <div><span class="ev-time">[ready]</span> <span class="ev-data">Dashboard loaded. Queue simulation running.</span></div>
+    </div>
+  </div>
+
+  <script>
+    // ─── DATA ───
+    const CUSTOMERS = [
+      'Alice Chen', 'Bob Martinez', 'Charlie Kim', 'Diana Patel',
+      'Ethan Novak', 'Fiona Singh', 'George Lee', 'Hannah Brooks',
+      'Ivan Torres', 'Julia Fischer', 'Kevin Rao', 'Laura Yamamoto'
+    ];
+
+    const ITEMS = [
+      'MacBook Pro 16"', 'iPhone 16 Pro', 'iPad Air M3', 'AirPods Pro 3',
+      'Apple Watch Ultra', 'Studio Display', 'Mac Mini M4', 'Magic Keyboard',
+      'HomePod 2', 'Vision Pro', 'AirTag 4-Pack', 'MagSafe Charger'
+    ];
+
+    let orders = [];
+    let nextOrderId = 1001;
+    let queueRunning = true;
+    let queueInterval = null;
+
+    const ordersBody = document.getElementById('ordersBody');
+    const pendingCountEl = document.getElementById('pendingCount');
+    const approvedCountEl = document.getElementById('approvedCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const toggleQueueBtn = document.getElementById('toggleQueueBtn');
+    const addOrderBtn = document.getElementById('addOrderBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const toastContainer = document.getElementById('toastContainer');
+    const eventLog = document.getElementById('eventLog');
+
+    // ─── HELPERS ───
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function randomAmount() { return (Math.random() * 2800 + 120).toFixed(2); }
+    function randomInterval() { return Math.floor(Math.random() * 6000) + 6000; } // 6s-12s
+
+    function logEvent(type, data) {
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="ev-time">[${time}]</span> <span class="ev-type">${type}</span> <span class="ev-data">${data}</span>`;
+      eventLog.prepend(div);
+      while (eventLog.children.length > 50) eventLog.removeChild(eventLog.lastChild);
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'toast visible';
+      toast.innerHTML = `<span>✅</span><span>${msg}</span>`;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function updateStats() {
+      const pending = orders.filter(o => o.status === 'pending').length;
+      const approved = orders.filter(o => o.status === 'approved').length;
+      pendingCountEl.textContent = pending;
+      approvedCountEl.textContent = approved;
+      totalCountEl.textContent = orders.length;
+    }
+
+    // ─── ORDER CREATION ───
+    function createOrder() {
+      const order = {
+        id: `ORD-${nextOrderId++}`,
+        customer: pick(CUSTOMERS),
+        item: pick(ITEMS),
+        amount: randomAmount(),
+        time: new Date().toLocaleTimeString(),
+        status: 'pending'
+      };
+      orders.push(order);
+      renderOrderRow(order, true);
+      updateStats();
+      logEvent('NEW_ORDER', `${order.id} — ${order.customer} — $${order.amount}`);
+    }
+
+    function renderOrderRow(order, isNew = false) {
+      const tr = document.createElement('tr');
+      tr.id = `row-${order.id}`;
+      if (isNew) tr.className = 'new-row';
+
+      const isApproved = order.status === 'approved';
+
+      tr.innerHTML = `
+        <td class="order-id">${order.id}</td>
+        <td class="customer-name">${order.customer}</td>
+        <td>${order.item}</td>
+        <td class="order-amount">$${order.amount}</td>
+        <td style="color: var(--dim);">${order.time}</td>
+        <td>
+          <span class="status-badge-cell ${isApproved ? 'status-approved' : 'status-pending'}">
+            ${isApproved ? '✓ Approved' : '● Pending'}
+          </span>
+        </td>
+        <td>
+          ${isApproved
+            ? '<span class="approved-label">Done</span>'
+            : `<button class="approve-btn" name="approve-${order.id}" data-order-id="${order.id}">Approve</button>`
+          }
+        </td>
+      `;
+
+      // Attach click listener to approve button
+      const btn = tr.querySelector('.approve-btn');
+      if (btn) {
+        btn.addEventListener('click', () => approveOrder(order.id));
+      }
+
+      ordersBody.prepend(tr);
+    }
+
+    // ─── APPROVE ORDER ───
+    function approveOrder(orderId) {
+      const order = orders.find(o => o.id === orderId);
+      if (!order || order.status === 'approved') return;
+
+      order.status = 'approved';
+
+      // Re-render row
+      const existingRow = document.getElementById(`row-${orderId}`);
+      if (existingRow) {
+        existingRow.className = 'approved-row';
+        existingRow.querySelector('.status-badge-cell').className = 'status-badge-cell status-approved';
+        existingRow.querySelector('.status-badge-cell').textContent = '✓ Approved';
+
+        const actionCell = existingRow.querySelector('td:last-child');
+        actionCell.innerHTML = '<span class="approved-label">Done</span>';
+      }
+
+      updateStats();
+      logEvent('APPROVED', `${orderId} — ${order.customer}`);
+      showToast(`Order ${orderId} approved!`);
+    }
+
+    // ─── QUEUE CONTROL ───
+    function startQueue() {
+      if (queueInterval) clearTimeout(queueInterval);
+
+      function scheduleNext() {
+        if (!queueRunning) return;
+        queueInterval = setTimeout(() => {
+          createOrder();
+          scheduleNext();
+        }, randomInterval());
+      }
+
+      scheduleNext();
+    }
+
+    function stopQueue() {
+      if (queueInterval) {
+        clearTimeout(queueInterval);
+        queueInterval = null;
+      }
+    }
+
+    toggleQueueBtn.addEventListener('click', () => {
+      queueRunning = !queueRunning;
+      if (queueRunning) {
+        toggleQueueBtn.textContent = '⏸ Pause Queue';
+        toggleQueueBtn.classList.add('active');
+        startQueue();
+        logEvent('QUEUE', 'Queue resumed');
+      } else {
+        toggleQueueBtn.textContent = '▶ Resume Queue';
+        toggleQueueBtn.classList.remove('active');
+        stopQueue();
+        logEvent('QUEUE', 'Queue paused');
+      }
+    });
+
+    addOrderBtn.addEventListener('click', () => {
+      createOrder();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      orders = [];
+      ordersBody.innerHTML = '';
+      updateStats();
+      logEvent('CLEAR', 'All orders cleared');
+    });
+
+    // ─── INITIAL SEED ───
+    createOrder();
+    createOrder();
+    createOrder();
+    startQueue();
+  </script>
+</body>
+</html>

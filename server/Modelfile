@@ -1,0 +1,17 @@
+FROM llama3.1
+
+# Force all layers onto GPU
+PARAMETER num_gpu 999
+
+# Use smaller context for speed (we send short DOM prompts)
+PARAMETER num_ctx 2048
+
+# Lower temperature for deterministic JSON output
+PARAMETER temperature 0.05
+
+# Limit output length (our JSON responses are short)
+PARAMETER num_predict 350
+
+# Speed tweaks
+PARAMETER num_batch 512
+PARAMETER num_thread 8

@@ -1,15 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "Browser automation Agent",
-  "version": "0.1.0",
+  "name": "son-ion",
+  "version": "1.1.0",
+  "description": "son-ion — Local browser vision agent with real-time PII redaction and visual reasoning.",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel",
+    "tabs",
+    "storage"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Open son-ion Agent"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["scripts/content.js"]
+      "js": ["content.js"]
     }
   ]
 }

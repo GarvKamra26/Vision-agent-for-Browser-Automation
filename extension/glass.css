@@ -1,0 +1,50 @@
+/* Pure Monochrome Dark Palette for son-ion (Black & Charcoal/Neutral) */
+
+:root {
+  --bg-pure: #000000;
+  --bg-card: #090909;
+  --bg-card-subtle: #0f0f0f;
+  --bg-card-hover: #171717;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.18);
+}
+
+.glass-panel {
+  background: #090909;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+}
+
+.glass-panel-subtle {
+  background: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-input {
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+
+/* Custom micro scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
