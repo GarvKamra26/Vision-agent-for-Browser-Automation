@@ -1,600 +1,944 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Operations Dashboard — Live Order Queue</title>
+  <title>Apex Bank — Commercial Portal</title>
   <style>
     :root {
-      --bg: #0a0e1a;
-      --surface: #111827;
-      --card: #1a2332;
-      --border: #1f2937;
-      --accent: #10b981;
-      --blue: #3b82f6;
-      --purple: #8b5cf6;
-      --amber: #f59e0b;
-      --red: #ef4444;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --dim: #64748b;
+      --background: #09090b;
+      --foreground: #f4f4f5;
+      --card: #121215;
+      --card-foreground: #f4f4f5;
+      --popover: #121215;
+      --popover-foreground: #f4f4f5;
+      --primary: #f4f4f5;
+      --primary-foreground: #09090b;
+      --secondary: #18181b;
+      --secondary-foreground: #f4f4f5;
+      --muted: #27272a;
+      --muted-foreground: #a1a1aa;
+      --accent: #27272a;
+      --accent-foreground: #f4f4f5;
+      --destructive: #ef4444;
+      --destructive-foreground: #f4f4f5;
+      --border: #27272a;
+      --input: #27272a;
+      --ring: #d4d4d8;
+      --radius: 6px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--background);
+      color: var(--foreground);
       min-height: 100vh;
-      padding: 24px;
-    }
-
-    /* Header */
-    .dashboard-header {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      padding: 0;
     }
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .header-left h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
+    /* Standard shadcn typography & controls */
+    h1, h2, h3, h4 {
       letter-spacing: -0.02em;
+      font-weight: 600;
     }
 
-    .live-badge {
+    p {
+      color: var(--muted-foreground);
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+
+    /* Buttons */
+    .btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      justify-content: center;
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      height: 34px;
+      padding: 0 12px;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+      outline: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:focus-visible {
+      box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: var(--primary-foreground);
+    }
+    .btn-primary:hover {
+      background-color: #e4e4e7;
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary);
+      color: var(--secondary-foreground);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover {
+      background-color: var(--accent);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: var(--foreground);
+      border-color: var(--border);
+    }
+    .btn-outline:hover {
+      background-color: var(--secondary);
+    }
+
+    .btn-destructive {
+      background-color: rgba(239, 68, 68, 0.15);
       color: #f87171;
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .btn-destructive:hover {
+      background-color: rgba(239, 68, 68, 0.25);
     }
 
-    .live-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #ef4444;
-      animation: live-pulse 1.5s ease-in-out infinite;
+    .btn-sm {
+      height: 28px;
+      padding: 0 8px;
+      font-size: 0.75rem;
     }
 
-    @keyframes live-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
-      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    /* Inputs */
+    .input-field, .select-field {
+      width: 100%;
+      height: 34px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background-color: #0c0c0e;
+      padding: 0 10px;
+      color: var(--foreground);
+      font-size: 0.8125rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .header-stats {
+    .input-field:focus, .select-field:focus {
+      border-color: #52525b;
+      box-shadow: 0 0 0 1px #52525b;
+    }
+
+    .input-field::placeholder {
+      color: #52525b;
+    }
+
+    .form-group {
       display: flex;
-      gap: 20px;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+      text-align: left;
     }
 
-    .stat {
-      text-align: center;
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #d4d4d8;
     }
 
-    .stat-value {
-      font-size: 1.4rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+    /* Cards */
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
     }
 
-    .stat-label {
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .stat-value.pending { color: var(--amber); }
-    .stat-value.approved { color: var(--accent); }
-    .stat-value.total { color: var(--blue); }
-
-    /* Queue Controls */
-    .queue-controls {
-      display: flex;
+    /* Status Banner / Alert */
+    #status-message {
+      display: none;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      background-color: rgba(39, 39, 42, 0.8);
+      border: 1px solid var(--border);
+      color: #e4e4e7;
       margin-bottom: 16px;
     }
 
-    .queue-controls button {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+    #status-message.visible {
+      display: flex;
     }
 
-    .queue-controls button:hover {
-      background: var(--card);
-      border-color: var(--accent);
-    }
-
-    .queue-controls button.active {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: var(--accent);
+    #status-message.success {
+      background-color: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
       color: #34d399;
     }
 
-    .speed-label {
-      font-size: 0.72rem;
-      color: var(--dim);
+    #status-message.warning {
+      background-color: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
     }
 
-    /* Order Table */
-    .orders-table-wrapper {
-      background: var(--surface);
+    /* Views */
+    #auth-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 380px;
+      background-color: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .auth-header {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .bank-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius);
+      background-color: var(--secondary);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      color: var(--foreground);
+    }
+
+    #dashboard-view {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    .navbar {
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      background-color: rgba(9, 9, 11, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .nav-left, .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background-color: var(--secondary);
+      color: var(--muted-foreground);
+    }
+
+    .badge-success {
+      background-color: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #34d399;
+    }
+
+    .badge-pending {
+      background-color: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+    }
+
+    /* Main layout */
+    .dashboard-container {
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-title {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-footer {
+      margin-top: 4px;
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+    }
+
+    /* Actions bar */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Table */
+    .table-container {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       overflow: hidden;
+    }
+
+    .table-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .table-filters {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-    }
-
-    thead th {
+      font-size: 0.8125rem;
       text-align: left;
-      padding: 12px 16px;
-      font-size: 0.72rem;
-      font-weight: 700;
+    }
+
+    th {
+      padding: 8px 16px;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--dim);
-      background: var(--card);
+      letter-spacing: 0.04em;
       border-bottom: 1px solid var(--border);
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background 0.2s;
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-
-    tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
-
-    tbody tr.new-row {
-      animation: row-appear 0.4s ease-out;
-    }
-
-    @keyframes row-appear {
-      from { background: rgba(16, 185, 129, 0.15); opacity: 0; transform: translateX(-10px); }
-      to { background: transparent; opacity: 1; transform: translateX(0); }
-    }
-
-    tbody tr.approved-row {
-      animation: row-approved 0.6s ease-out;
-    }
-
-    @keyframes row-approved {
-      0% { background: rgba(16, 185, 129, 0.25); }
-      100% { background: transparent; }
+      background-color: rgba(24, 24, 27, 0.4);
     }
 
     td {
-      padding: 12px 16px;
-      font-size: 0.85rem;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      color: #d4d4d8;
       vertical-align: middle;
     }
 
-    .order-id {
-      font-weight: 700;
-      color: var(--blue);
-      font-family: monospace;
+    tr:last-child td {
+      border-bottom: none;
     }
 
-    .customer-name { font-weight: 600; }
-
-    .order-amount {
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+    tr:hover td {
+      background-color: rgba(39, 39, 42, 0.3);
     }
 
-    /* Status Badges */
-    .status-badge-cell {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.72rem;
-      font-weight: 700;
-    }
-
-    .status-pending {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
-    }
-
-    .status-approved {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+    .amount-in {
       color: #34d399;
-    }
-
-    /* Approve Button */
-    button.approve-btn {
-      padding: 6px 14px;
-      border-radius: 6px;
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      background: rgba(16, 185, 129, 0.1);
-      color: #34d399;
-      font-size: 0.78rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    button.approve-btn:hover {
-      background: #10b981;
-      color: #ffffff;
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
-    }
-
-    button.approve-btn:disabled {
-      opacity: 0.3;
-      cursor: default;
-      background: transparent;
-      color: var(--dim);
-      box-shadow: none;
-      border-color: var(--border);
-    }
-
-    .approved-label {
-      color: #34d399;
-      font-weight: 600;
-      font-size: 0.78rem;
-    }
-
-    /* Toast Notification */
-    .toast-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 10000;
-    }
-
-    .toast {
-      background: var(--card);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      color: var(--text);
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 0.82rem;
       font-weight: 500;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      animation: toast-in 0.3s ease-out, toast-out 0.3s 2.5s ease-in forwards;
-      display: flex;
+    }
+
+    .amount-out {
+      color: #f4f4f5;
+      font-weight: 500;
+    }
+
+    /* Modal dialog */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(2px);
       align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 420px;
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-header {
+      margin-bottom: 16px;
+    }
+
+    .modal-footer {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
       gap: 8px;
     }
-
-    .toast.visible { display: flex; }
-
-    @keyframes toast-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes toast-out {
-      from { opacity: 1; }
-      to { opacity: 0; transform: translateY(-5px); }
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 40px;
-      color: var(--dim);
-    }
-
-    .empty-state svg {
-      margin-bottom: 12px;
-    }
-
-    /* Event Log */
-    .event-log-section {
-      margin-top: 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-    }
-
-    .event-log-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--dim);
-      margin-bottom: 8px;
-    }
-
-    .event-log {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.72rem;
-      color: var(--muted);
-      max-height: 120px;
-      overflow-y: auto;
-      line-height: 1.6;
-    }
-
-    .event-log .ev-time { color: var(--dim); }
-    .event-log .ev-type { color: #38bdf8; font-weight: 600; }
-    .event-log .ev-data { color: #e2e8f0; }
   </style>
 </head>
 <body>
 
-  <header class="dashboard-header">
-    <div class="header-left">
-      <h1>Operations Dashboard</h1>
-      <div class="live-badge">
-        <span class="live-dot"></span>
-        LIVE QUEUE
+  <!-- ========================================== -->
+  <!-- STEP 1: AUTHENTICATION VIEW                -->
+  <!-- ========================================== -->
+  <main id="auth-view">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="bank-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"></path>
+            <path d="M3 10h18"></path>
+            <path d="M5 6l7-3 7 3"></path>
+            <path d="M4 10v11"></path>
+            <path d="M20 10v11"></path>
+            <path d="M8 14v4"></path>
+            <path d="M12 14v4"></path>
+            <path d="M16 14v4"></path>
+          </svg>
+        </div>
+        <h2>Sign in to Apex Bank</h2>
+        <p>Commercial treasury & account management</p>
+      </div>
+
+      <div id="login-alert" class="card" style="display: none; padding: 8px 12px; margin-bottom: 14px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171;"></div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Corporate Email</label>
+          <input 
+            type="email" 
+            id="login-email" 
+            name="email" 
+            class="input-field" 
+            placeholder="alex.morgan@enterprise.com" 
+            value="alex.morgan@enterprise.com" 
+            required 
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input 
+            type="password" 
+            id="login-password" 
+            name="password" 
+            class="input-field" 
+            placeholder="••••••••••••" 
+            value="ApexTreasury#2026" 
+            required 
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 18px;">
+          <button type="submit" id="btn-login" class="btn btn-primary" style="flex: 1;">
+            Sign In
+          </button>
+          <button type="button" id="btn-quick-fill" class="btn btn-secondary btn-sm" onclick="quickFillCredentials()">
+            Auto-fill
+          </button>
+        </div>
+      </form>
+
+      <div style="margin-top: 16px; text-align: center;">
+        <p style="font-size: 0.6875rem;">Protected by End-to-End Encryption and Hardware Security Module</p>
       </div>
     </div>
-    <div class="header-stats">
-      <div class="stat">
-        <div class="stat-value pending" id="pendingCount">0</div>
-        <div class="stat-label">Pending</div>
+  </main>
+
+
+  <!-- ========================================== -->
+  <!-- STEP 2: DASHBOARD & OPERATIONS VIEW        -->
+  <!-- ========================================== -->
+  <div id="dashboard-view">
+    <!-- Navigation Bar -->
+    <header class="navbar">
+      <div class="nav-left">
+        <span style="font-weight: 600; font-size: 0.875rem; letter-spacing: -0.01em;">Apex Commercial</span>
+        <span class="badge">Checking ••• 4920</span>
+        <span class="badge badge-success">ACH Active</span>
       </div>
-      <div class="stat">
-        <div class="stat-value approved" id="approvedCount">0</div>
-        <div class="stat-label">Approved</div>
+
+      <div class="nav-right">
+        <span id="user-display" style="font-size: 0.75rem; color: var(--muted-foreground);">alex.morgan@enterprise.com</span>
+        <button id="btn-logout" class="btn btn-outline btn-sm" onclick="handleLogout()">Sign Out</button>
       </div>
-      <div class="stat">
-        <div class="stat-value total" id="totalCount">0</div>
-        <div class="stat-label">Total</div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+      
+      <!-- Real-time Agent & User Status Message -->
+      <div id="status-message" role="alert" class="visible warning">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="status-text">Pending wire transfer #WT-8941 requires administrative authorization ($24,500.00).</span>
       </div>
+
+      <!-- Financial Metrics Grid -->
+      <section class="stats-grid">
+        <div class="card">
+          <div class="stat-title">Operating Balance</div>
+          <div class="stat-value" id="val-balance">$184,920.40</div>
+          <div class="stat-footer">Available immediate settlement</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-title">Monthly Outflow</div>
+          <div class="stat-value" id="val-outflow">$38,150.00</div>
+          <div class="stat-footer">28 transactions this cycle</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-title">Pending Authorizations</div>
+          <div class="stat-value" id="val-pending" style="color: #fbbf24;">1 Wire</div>
+          <div class="stat-footer">Awaiting dual control sign-off</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-title">Debit Card (••• 8812)</div>
+          <div class="stat-value" id="val-card-status" style="color: #34d399; font-size: 1.25rem;">Active</div>
+          <div class="stat-footer">Limit: $10,000 / day</div>
+        </div>
+      </section>
+
+      <!-- Operation Control Toolbar -->
+      <section class="toolbar">
+        <div class="toolbar-actions">
+          <button id="btn-open-transfer" class="btn btn-primary" onclick="openTransferModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Transfer Funds
+          </button>
+
+          <button id="btn-approve-wire" class="btn btn-secondary" onclick="approvePendingWire()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Approve Pending Wire
+          </button>
+
+          <button id="btn-toggle-card" class="btn btn-outline" onclick="toggleCardFreeze()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span id="btn-card-text">Freeze Debit Card</span>
+          </button>
+
+          <button id="btn-export" class="btn btn-outline" onclick="exportStatement()">
+            Export Statement
+          </button>
+        </div>
+
+        <div>
+          <button id="btn-reset" class="btn btn-outline btn-sm" style="color: var(--muted-foreground);" onclick="resetDemo()">
+            Reset Demo State
+          </button>
+        </div>
+      </section>
+
+      <!-- Transactions Ledger -->
+      <section class="table-container">
+        <div class="table-header">
+          <h3 style="font-size: 0.875rem;">Transaction Ledger</h3>
+          
+          <div class="table-filters">
+            <button id="tab-all" class="btn btn-secondary btn-sm" onclick="filterTransactions('all')">All</button>
+            <button id="tab-outflow" class="btn btn-outline btn-sm" onclick="filterTransactions('outflow')">Debit</button>
+            <button id="tab-inflow" class="btn btn-outline btn-sm" onclick="filterTransactions('inflow')">Credit</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description / Entity</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th style="text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-tbody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </section>
     </div>
-  </header>
-
-  <div class="queue-controls">
-    <button id="toggleQueueBtn" class="active">⏸ Pause Queue</button>
-    <button id="addOrderBtn">➕ Add Order Now</button>
-    <button id="clearBtn">🗑 Clear All</button>
-    <span class="speed-label">New orders arrive every <strong>6–12 seconds</strong></span>
   </div>
 
-  <div class="orders-table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Customer</th>
-          <th>Item</th>
-          <th>Amount</th>
-          <th>Time</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="ordersBody">
-        <!-- Dynamic rows appear here -->
-      </tbody>
-    </table>
-  </div>
 
-  <div class="toast-container" id="toastContainer"></div>
+  <!-- ========================================== -->
+  <!-- TRANSFER FUNDS MODAL                       -->
+  <!-- ========================================== -->
+  <div id="transfer-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Initiate Wire / ACH Transfer</h3>
+        <p>Funds settle in real-time via FedNow network</p>
+      </div>
 
-  <div class="event-log-section">
-    <div class="event-log-title">DOM Event Monitor</div>
-    <div class="event-log" id="eventLog">
-      <div><span class="ev-time">[ready]</span> <span class="ev-data">Dashboard loaded. Queue simulation running.</span></div>
+      <form id="transfer-form" onsubmit="handleTransferSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="transfer-recipient">Beneficiary Name or Account</label>
+          <input 
+            type="text" 
+            id="transfer-recipient" 
+            name="recipient" 
+            class="input-field" 
+            placeholder="e.g. Acme Corp Treasury (US49210)" 
+            required 
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="transfer-amount">Amount (USD)</label>
+          <input 
+            type="number" 
+            id="transfer-amount" 
+            name="amount" 
+            class="input-field" 
+            placeholder="0.00" 
+            min="1" 
+            step="0.01" 
+            required 
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="transfer-memo">Payment Reference / Memo</label>
+          <input 
+            type="text" 
+            id="transfer-memo" 
+            name="memo" 
+            class="input-field" 
+            placeholder="Invoice #9042 or Payroll" 
+            value="Vendor settlement" 
+          />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-transfer" class="btn btn-outline" onclick="closeTransferModal()">Cancel</button>
+          <button type="submit" id="btn-submit-transfer" class="btn btn-primary">Execute Transfer</button>
+        </div>
+      </form>
     </div>
   </div>
 
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT STATE ENGINE                    -->
+  <!-- ========================================== -->
   <script>
-    // ─── DATA ───
-    const CUSTOMERS = [
-      'Alice Chen', 'Bob Martinez', 'Charlie Kim', 'Diana Patel',
-      'Ethan Novak', 'Fiona Singh', 'George Lee', 'Hannah Brooks',
-      'Ivan Torres', 'Julia Fischer', 'Kevin Rao', 'Laura Yamamoto'
-    ];
+    // State management
+    let state = {
+      isAuthenticated: false,
+      balance: 184920.40,
+      outflow: 38150.00,
+      pendingWireAmount: 24500.00,
+      hasPendingWire: true,
+      cardFrozen: false,
+      filter: 'all',
+      transactions: [
+        { id: "TX-901", date: "Today, 10:42 AM", desc: "Stripe Payout — Merchant Sales", category: "Revenue", type: "inflow", status: "Settled", amount: 14250.00 },
+        { id: "TX-902", date: "Today, 08:15 AM", desc: "Amazon Web Services (Cloud)", category: "Infrastructure", type: "outflow", status: "Settled", amount: -3420.50 },
+        { id: "TX-903", date: "Yesterday", desc: "WeWork Global — Office Lease", category: "Facilities", type: "outflow", status: "Settled", amount: -6800.00 },
+        { id: "TX-904", date: "Sep 08", desc: "Gusto Payroll Processing", category: "Payroll", type: "outflow", status: "Settled", amount: -27929.50 },
+        { id: "TX-905", date: "Sep 07", desc: "Sequoia Capital — Tranche A", category: "Capital", type: "inflow", status: "Settled", amount: 50000.00 }
+      ]
+    };
 
-    const ITEMS = [
-      'MacBook Pro 16"', 'iPhone 16 Pro', 'iPad Air M3', 'AirPods Pro 3',
-      'Apple Watch Ultra', 'Studio Display', 'Mac Mini M4', 'Magic Keyboard',
-      'HomePod 2', 'Vision Pro', 'AirTag 4-Pack', 'MagSafe Charger'
-    ];
-
-    let orders = [];
-    let nextOrderId = 1001;
-    let queueRunning = true;
-    let queueInterval = null;
-
-    const ordersBody = document.getElementById('ordersBody');
-    const pendingCountEl = document.getElementById('pendingCount');
-    const approvedCountEl = document.getElementById('approvedCount');
-    const totalCountEl = document.getElementById('totalCount');
-    const toggleQueueBtn = document.getElementById('toggleQueueBtn');
-    const addOrderBtn = document.getElementById('addOrderBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const toastContainer = document.getElementById('toastContainer');
-    const eventLog = document.getElementById('eventLog');
-
-    // ─── HELPERS ───
-    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-    function randomAmount() { return (Math.random() * 2800 + 120).toFixed(2); }
-    function randomInterval() { return Math.floor(Math.random() * 6000) + 6000; } // 6s-12s
-
-    function logEvent(type, data) {
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement('div');
-      div.innerHTML = `<span class="ev-time">[${time}]</span> <span class="ev-type">${type}</span> <span class="ev-data">${data}</span>`;
-      eventLog.prepend(div);
-      while (eventLog.children.length > 50) eventLog.removeChild(eventLog.lastChild);
+    function formatCurrency(num) {
+      const isNeg = num < 0;
+      const absVal = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return (isNeg ? '-' : '') + '$' + absVal;
     }
 
-    function showToast(msg) {
-      const toast = document.createElement('div');
-      toast.className = 'toast visible';
-      toast.innerHTML = `<span>✅</span><span>${msg}</span>`;
-      toastContainer.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    function updateStats() {
-      const pending = orders.filter(o => o.status === 'pending').length;
-      const approved = orders.filter(o => o.status === 'approved').length;
-      pendingCountEl.textContent = pending;
-      approvedCountEl.textContent = approved;
-      totalCountEl.textContent = orders.length;
-    }
-
-    // ─── ORDER CREATION ───
-    function createOrder() {
-      const order = {
-        id: `ORD-${nextOrderId++}`,
-        customer: pick(CUSTOMERS),
-        item: pick(ITEMS),
-        amount: randomAmount(),
-        time: new Date().toLocaleTimeString(),
-        status: 'pending'
-      };
-      orders.push(order);
-      renderOrderRow(order, true);
-      updateStats();
-      logEvent('NEW_ORDER', `${order.id} — ${order.customer} — $${order.amount}`);
-    }
-
-    function renderOrderRow(order, isNew = false) {
-      const tr = document.createElement('tr');
-      tr.id = `row-${order.id}`;
-      if (isNew) tr.className = 'new-row';
-
-      const isApproved = order.status === 'approved';
-
-      tr.innerHTML = `
-        <td class="order-id">${order.id}</td>
-        <td class="customer-name">${order.customer}</td>
-        <td>${order.item}</td>
-        <td class="order-amount">$${order.amount}</td>
-        <td style="color: var(--dim);">${order.time}</td>
-        <td>
-          <span class="status-badge-cell ${isApproved ? 'status-approved' : 'status-pending'}">
-            ${isApproved ? '✓ Approved' : '● Pending'}
-          </span>
-        </td>
-        <td>
-          ${isApproved
-            ? '<span class="approved-label">Done</span>'
-            : `<button class="approve-btn" name="approve-${order.id}" data-order-id="${order.id}">Approve</button>`
-          }
-        </td>
-      `;
-
-      // Attach click listener to approve button
-      const btn = tr.querySelector('.approve-btn');
-      if (btn) {
-        btn.addEventListener('click', () => approveOrder(order.id));
+    function setStatus(message, type = 'success') {
+      const banner = document.getElementById('status-message');
+      const text = document.getElementById('status-text');
+      if (!message) {
+        banner.className = '';
+        return;
       }
-
-      ordersBody.prepend(tr);
+      banner.className = 'visible ' + type;
+      text.textContent = message;
     }
 
-    // ─── APPROVE ORDER ───
-    function approveOrder(orderId) {
-      const order = orders.find(o => o.id === orderId);
-      if (!order || order.status === 'approved') return;
-
-      order.status = 'approved';
-
-      // Re-render row
-      const existingRow = document.getElementById(`row-${orderId}`);
-      if (existingRow) {
-        existingRow.className = 'approved-row';
-        existingRow.querySelector('.status-badge-cell').className = 'status-badge-cell status-approved';
-        existingRow.querySelector('.status-badge-cell').textContent = '✓ Approved';
-
-        const actionCell = existingRow.querySelector('td:last-child');
-        actionCell.innerHTML = '<span class="approved-label">Done</span>';
-      }
-
-      updateStats();
-      logEvent('APPROVED', `${orderId} — ${order.customer}`);
-      showToast(`Order ${orderId} approved!`);
-    }
-
-    // ─── QUEUE CONTROL ───
-    function startQueue() {
-      if (queueInterval) clearTimeout(queueInterval);
-
-      function scheduleNext() {
-        if (!queueRunning) return;
-        queueInterval = setTimeout(() => {
-          createOrder();
-          scheduleNext();
-        }, randomInterval());
-      }
-
-      scheduleNext();
-    }
-
-    function stopQueue() {
-      if (queueInterval) {
-        clearTimeout(queueInterval);
-        queueInterval = null;
-      }
-    }
-
-    toggleQueueBtn.addEventListener('click', () => {
-      queueRunning = !queueRunning;
-      if (queueRunning) {
-        toggleQueueBtn.textContent = '⏸ Pause Queue';
-        toggleQueueBtn.classList.add('active');
-        startQueue();
-        logEvent('QUEUE', 'Queue resumed');
+    function renderUI() {
+      // Metric values
+      document.getElementById('val-balance').textContent = formatCurrency(state.balance);
+      document.getElementById('val-outflow').textContent = formatCurrency(state.outflow);
+      
+      const pendingEl = document.getElementById('val-pending');
+      const approveBtn = document.getElementById('btn-approve-wire');
+      if (state.hasPendingWire) {
+        pendingEl.textContent = "1 Wire";
+        pendingEl.style.color = "#fbbf24";
+        approveBtn.disabled = false;
+        approveBtn.classList.remove('btn-outline');
+        approveBtn.classList.add('btn-secondary');
       } else {
-        toggleQueueBtn.textContent = '▶ Resume Queue';
-        toggleQueueBtn.classList.remove('active');
-        stopQueue();
-        logEvent('QUEUE', 'Queue paused');
+        pendingEl.textContent = "0 Pending";
+        pendingEl.style.color = "#a1a1aa";
+        approveBtn.disabled = true;
+        approveBtn.classList.add('btn-outline');
+        approveBtn.classList.remove('btn-secondary');
       }
-    });
 
-    addOrderBtn.addEventListener('click', () => {
-      createOrder();
-    });
+      // Card Status
+      const cardEl = document.getElementById('val-card-status');
+      const cardBtnText = document.getElementById('btn-card-text');
+      if (state.cardFrozen) {
+        cardEl.textContent = "Frozen";
+        cardEl.style.color = "#f87171";
+        cardBtnText.textContent = "Unfreeze Debit Card";
+      } else {
+        cardEl.textContent = "Active";
+        cardEl.style.color = "#34d399";
+        cardBtnText.textContent = "Freeze Debit Card";
+      }
 
-    clearBtn.addEventListener('click', () => {
-      orders = [];
-      ordersBody.innerHTML = '';
-      updateStats();
-      logEvent('CLEAR', 'All orders cleared');
-    });
+      // Transaction Table
+      const tbody = document.getElementById('transactions-tbody');
+      tbody.innerHTML = '';
 
-    // ─── INITIAL SEED ───
-    createOrder();
-    createOrder();
-    createOrder();
-    startQueue();
+      const filtered = state.transactions.filter(t => {
+        if (state.filter === 'all') return true;
+        return t.type === state.filter;
+      });
+
+      filtered.forEach(tx => {
+        const tr = document.createElement('tr');
+        const isPositive = tx.amount > 0;
+        tr.innerHTML = `
+          <td style="color: #71717a;">${tx.date}</td>
+          <td style="font-weight: 500; color: #f4f4f5;">${tx.desc}</td>
+          <td><span class="badge">${tx.category}</span></td>
+          <td><span class="badge badge-success">${tx.status}</span></td>
+          <td style="text-align: right;" class="${isPositive ? 'amount-in' : 'amount-out'}">
+            ${isPositive ? '+' : ''}${formatCurrency(tx.amount)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Handlers
+    function handleLogin(e) {
+      if (e) e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const pass = document.getElementById('login-password').value.trim();
+
+      if (!email || !pass) {
+        const alert = document.getElementById('login-alert');
+        alert.style.display = 'block';
+        alert.textContent = 'Please enter valid corporate credentials.';
+        return;
+      }
+
+      state.isAuthenticated = true;
+      document.getElementById('user-display').textContent = email;
+      document.getElementById('auth-view').style.display = 'none';
+      document.getElementById('dashboard-view').style.display = 'flex';
+
+      setStatus("Session authenticated. Enterprise dual-control treasury active.", "success");
+      renderUI();
+    }
+
+    function handleLogout() {
+      state.isAuthenticated = false;
+      document.getElementById('auth-view').style.display = 'flex';
+      document.getElementById('dashboard-view').style.display = 'none';
+    }
+
+    function quickFillCredentials() {
+      document.getElementById('login-email').value = "alex.morgan@enterprise.com";
+      document.getElementById('login-password').value = "ApexTreasury#2026";
+    }
+
+    function openTransferModal() {
+      document.getElementById('transfer-modal').classList.add('open');
+      document.getElementById('transfer-recipient').focus();
+    }
+
+    function closeTransferModal() {
+      document.getElementById('transfer-modal').classList.remove('open');
+    }
+
+    function handleTransferSubmit(e) {
+      e.preventDefault();
+      const recipient = document.getElementById('transfer-recipient').value.trim();
+      const amount = parseFloat(document.getElementById('transfer-amount').value);
+      const memo = document.getElementById('transfer-memo').value.trim() || "Wire transfer";
+
+      if (!recipient || isNaN(amount) || amount <= 0) return;
+
+      state.balance -= amount;
+      state.outflow += amount;
+
+      state.transactions.unshift({
+        id: "TX-" + Math.floor(1000 + Math.random() * 9000),
+        date: "Just now",
+        desc: `Transfer to ${recipient} (${memo})`,
+        category: "Transfer",
+        type: "outflow",
+        status: "Settled",
+        amount: -amount
+      });
+
+      closeTransferModal();
+      document.getElementById('transfer-form').reset();
+      setStatus(`Successfully transferred ${formatCurrency(amount)} to ${recipient}.`, "success");
+      renderUI();
+    }
+
+    function approvePendingWire() {
+      if (!state.hasPendingWire) return;
+      state.hasPendingWire = false;
+      state.balance -= state.pendingWireAmount;
+      state.outflow += state.pendingWireAmount;
+
+      state.transactions.unshift({
+        id: "WT-8941",
+        date: "Just now",
+        desc: "Wire #WT-8941 to Nexus Global Logistics",
+        category: "Wire",
+        type: "outflow",
+        status: "Approved",
+        amount: -state.pendingWireAmount
+      });
+
+      setStatus(`Wire transfer #WT-8941 for $24,500.00 approved and dispatched via Fedwire.`, "success");
+      renderUI();
+    }
+
+    function toggleCardFreeze() {
+      state.cardFrozen = !state.cardFrozen;
+      const statusText = state.cardFrozen ? "frozen" : "reactivated";
+      setStatus(`Corporate debit card ••• 8812 has been ${statusText}.`, state.cardFrozen ? "warning" : "success");
+      renderUI();
+    }
+
+    function exportStatement() {
+      setStatus("Statement for Current Fiscal Period exported to CSV successfully.", "success");
+    }
+
+    function filterTransactions(filterType) {
+      state.filter = filterType;
+      ['all', 'outflow', 'inflow'].forEach(f => {
+        const btn = document.getElementById('tab-' + f);
+        if (f === filterType) {
+          btn.className = 'btn btn-secondary btn-sm';
+        } else {
+          btn.className = 'btn btn-outline btn-sm';
+        }
+      });
+      renderUI();
+    }
+
+    function resetDemo() {
+      state = {
+        isAuthenticated: true,
+        balance: 184920.40,
+        outflow: 38150.00,
+        pendingWireAmount: 24500.00,
+        hasPendingWire: true,
+        cardFrozen: false,
+        filter: 'all',
+        transactions: [
+          { id: "TX-901", date: "Today, 10:42 AM", desc: "Stripe Payout — Merchant Sales", category: "Revenue", type: "inflow", status: "Settled", amount: 14250.00 },
+          { id: "TX-902", date: "Today, 08:15 AM", desc: "Amazon Web Services (Cloud)", category: "Infrastructure", type: "outflow", status: "Settled", amount: -3420.50 },
+          { id: "TX-903", date: "Yesterday", desc: "WeWork Global — Office Lease", category: "Facilities", type: "outflow", status: "Settled", amount: -6800.00 },
+          { id: "TX-904", date: "Sep 08", desc: "Gusto Payroll Processing", category: "Payroll", type: "outflow", status: "Settled", amount: -27929.50 },
+          { id: "TX-905", date: "Sep 07", desc: "Sequoia Capital — Tranche A", category: "Capital", type: "inflow", status: "Settled", amount: 50000.00 }
+        ]
+      };
+      setStatus("Pending wire transfer #WT-8941 requires administrative authorization ($24,500.00).", "warning");
+      renderUI();
+    }
+
+    // Initialize
+    renderUI();
   </script>
 </body>
 </html>

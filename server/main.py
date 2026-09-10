@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -464,6 +465,59 @@ async def process_dom(payload: ProcessDOMRequest):
             + "\n"
         )
 
+    # ────────────────────────────────────────────────────────────────────────
+    # TASK REPETITION LOOP DETECTOR (>2 REPEATS) & 500ms HALT
+    # ────────────────────────────────────────────────────────────────────────
+    loop_detected = False
+    loop_summary = ""
+    repeated_target_ids = set()
+
+    if payload.previous_actions and len(payload.previous_actions) >= 2:
+        last_action = payload.previous_actions[-1]
+        
+        # 1. Consecutive identical action check
+        consecutive_count = 0
+        for past in reversed(payload.previous_actions):
+            if past.action == last_action.action and past.target_id == last_action.target_id:
+                consecutive_count += 1
+            else:
+                break
+
+        if consecutive_count >= 2:
+            loop_detected = True
+            if last_action.target_id is not None:
+                repeated_target_ids.add(last_action.target_id)
+            loop_summary = f"{last_action.action.upper()} on element #{last_action.target_id} ('{last_action.target_text or ''}')"
+        else:
+            # 2. Windowed frequency check across recent actions
+            action_freq = {}
+            for past in payload.previous_actions[-5:]:
+                key = (past.action, past.target_id)
+                action_freq[key] = action_freq.get(key, 0) + 1
+                if action_freq[key] >= 2 and past.action not in ("scroll", "done"):
+                    loop_detected = True
+                    if past.target_id is not None:
+                        repeated_target_ids.add(past.target_id)
+                    loop_summary = f"repeated {past.action.upper()} on #{past.target_id} ('{past.target_text or ''}')"
+                    break
+
+    loop_directive = ""
+    if loop_detected:
+        logger.warning(f"[Anti-Loop] Repetition loop detected (>2 attempts of {loop_summary}). Halting 500ms and forcing unique approach in prompt.")
+        await asyncio.sleep(0.5)  # 500ms halt to settle DOM/network and break execution loop
+
+        target_constraint = ", ".join(f"#{tid}" for tid in repeated_target_ids) if repeated_target_ids else "the repeated element"
+        loop_directive = (
+            f"\n🚨 LOOP ESCAPE DIRECTIVE (MANDATORY UNIQUE APPROACH):\n"
+            f"- REPETITION DETECTED: The previous action ({loop_summary}) was attempted more than 2 times without progressing state.\n"
+            f"- FORBIDDEN: Do NOT repeat action '{last_action.action}' and do NOT touch element {target_constraint}.\n"
+            f"- MANDATORY UNIQUE ITERATION: You MUST adopt an entirely DIFFERENT approach in this step:\n"
+            f"  * Select a completely different interactive element that advances the goal.\n"
+            f"  * If you were trying to submit or confirm, look for alternative buttons, parent forms, or scroll to find another control.\n"
+            f"  * If the action was already completed or no alternative element exists, return action 'done' immediately.\n"
+            f"- ZERO REPETITION: Your action and target_id MUST differ from previous failed attempts.\n"
+        )
+
     user_prompt = (
         f"USER GOAL: {payload.user_goal}\n\n"
         f"CRITICAL PATH DIRECTIVES (ZERO DEVIATION):\n"
@@ -472,6 +526,7 @@ async def process_dom(payload: ProcessDOMRequest):
         "3. If the user's goal has already been achieved, return action 'done' IMMEDIATELY.\n"
         "4. If the target element matching the goal is present, interact with it. Do NOT touch any other element.\n"
         "5. If no element matches the goal, either 'scroll' to bring it into view or return 'done'. NEVER click random elements.\n"
+        f"{loop_directive}"
         f"{visual_perception_info}"
         f"{page_status_info}"
         f"{history_info}\n"

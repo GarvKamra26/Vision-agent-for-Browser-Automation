@@ -1,5 +1,5 @@
 # PowerShell script to guarantee Ollama runs with 100% GPU offloading on NVIDIA GeForce RTX 5060
-Write-Host "Checking NVIDIA GPU..." -ForegroundColor Cyan
+Write-Host "Checking & Waking NVIDIA GPU from sleep..." -ForegroundColor Cyan
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
 
 # Set User and Process Environment Variables for GPU Offload
@@ -20,6 +20,7 @@ $ollamaPs = ollama ps 2>$null
 if ($ollamaPs -match "100% GPU") {
     Write-Host "Ollama is already actively running on 100% GPU!" -ForegroundColor Green
     ollama ps
+    nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv
     exit 0
 }
 
@@ -28,17 +29,25 @@ Stop-Process -Name "ollama app" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "ollama" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
-Write-Host "Waiting for Ollama to initialize..." -ForegroundColor Cyan
-Start-Sleep -Seconds 3
+# Wake GPU before starting Ollama so discovery finds CUDA immediately
+nvidia-smi | Out-Null
+
+$ollamaExe = "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe"
+if (-not (Test-Path $ollamaExe)) {
+    $ollamaExe = "ollama"
+}
+
+Start-Process -FilePath $ollamaExe -ArgumentList "serve" -WindowStyle Hidden
+Write-Host "Waiting for Ollama GPU initialization..." -ForegroundColor Cyan
+Start-Sleep -Seconds 4
 
 # Warm model into GPU VRAM indefinitely
-Write-Host "Locking hermes-fast into GPU VRAM..." -ForegroundColor Cyan
+Write-Host "Locking model into GPU VRAM..." -ForegroundColor Cyan
 try {
-    Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body '{"model": "hermes-fast", "keep_alive": -1}' -ContentType "application/json" | Out-Null
+    Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body '{"model": "llama3.1", "keep_alive": "24h"}' -ContentType "application/json" | Out-Null
 } catch {
     Start-Sleep -Seconds 3
-    Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body '{"model": "hermes-fast", "keep_alive": -1}' -ContentType "application/json" | Out-Null
+    Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body '{"model": "llama3.1", "keep_alive": "24h"}' -ContentType "application/json" | Out-Null
 }
 
 Write-Host "Verifying GPU Status:" -ForegroundColor Green
